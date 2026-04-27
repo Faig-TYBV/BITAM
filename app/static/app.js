@@ -17,6 +17,13 @@ function esc(x) {
   return String(x ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
+const avatarPalette = [
+  ["#4da3ff", "#6b5cff"],
+  ["#34d399", "#60a5fa"],
+  ["#f472b6", "#a78bfa"],
+  ["#f59e0b", "#ef4444"],
+];
+
 function avatarDataUri(name) {
   const safeName = String(name || "").trim();
   const initials =
@@ -27,15 +34,10 @@ function avatarDataUri(name) {
       .map((word) => word[0])
       .join("")
       .toUpperCase() || "AZ";
-  const palette = [
-    ["#4da3ff", "#6b5cff"],
-    ["#34d399", "#60a5fa"],
-    ["#f472b6", "#a78bfa"],
-    ["#f59e0b", "#ef4444"],
-  ];
-  const hash = safeName.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-  const [c1, c2] = palette[hash % palette.length];
-  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='${c1}'/><stop offset='100%' stop-color='${c2}'/></linearGradient></defs><rect width='64' height='64' rx='18' fill='url(#g)'/><text x='50%' y='55%' font-size='24' text-anchor='middle' fill='white' font-family='Inter,Arial,sans-serif' font-weight='700'>${initials}</text></svg>`;
+  const hash = safeName.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) || 1;
+  const [c1, c2] = avatarPalette[Math.abs(hash) % avatarPalette.length];
+  const gradientId = `g${Math.abs(hash)}`;
+  const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><defs><linearGradient id='${gradientId}' x1='0' y1='0' x2='1' y2='1'><stop offset='0%' stop-color='${c1}'/><stop offset='100%' stop-color='${c2}'/></linearGradient></defs><rect width='64' height='64' rx='18' fill='url(#${gradientId})'/><text x='50%' y='55%' font-size='24' text-anchor='middle' fill='white' font-family='Inter,Arial,sans-serif' font-weight='700'>${initials}</text></svg>`;
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
 }
 
