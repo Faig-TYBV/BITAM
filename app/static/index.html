@@ -4,10 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AZCON Procurement</title>
-    <link rel="stylesheet" href="/static/styles.css?v=6" />
+    <link rel="stylesheet" href="/static/styles.css?v=7" />
   </head>
   <body>
     <div class="layout">
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
       <aside class="sidebar">
         <div class="brand">
           <div class="brand-logo">A</div>
@@ -28,6 +29,9 @@
 
       <main class="content">
         <header class="topbar">
+          <button class="hamburger" id="btnHamburger" aria-label="Open navigation">
+            <span></span><span></span><span></span>
+          </button>
           <div>
             <h2 id="topbarTitle">AZCON Vendor Hub</h2>
             <p id="topbarSubtitle">Şirkətlər, uğur faizi, sifariş və AI tövsiyə axını.</p>
@@ -226,6 +230,6 @@
       </main>
     </div>
 
-    <script src="app.js?v=15"></script>
+    <script src="app.js?v=16"></script>
   </body>
 </html>

@@ -17,6 +17,54 @@ function esc(x) {
   return String(x ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
+/* ── UI helpers ─────────────────────────────────── */
+
+function emptyState(heading, subtext = "") {
+  return `<div class="empty-state">
+    <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="9" y="14" width="34" height="27" rx="3" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M17 22h18M17 29h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="39" cy="39" r="9" fill="var(--surface)" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M36 39h6M39 36v6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    <h4>${esc(heading)}</h4>
+    ${subtext ? `<p>${esc(subtext)}</p>` : ""}
+  </div>`;
+}
+
+function skeletonTable(cols, rows = 5) {
+  const widths = [55, 80, 65, 75, 55, 70, 60];
+  const headerCells = cols.map((c) => `<th>${esc(c)}</th>`).join("");
+  const dataCells = cols
+    .map((_, i) => `<td><span class="skeleton-cell" style="width:${widths[i % widths.length]}%"></span></td>`)
+    .join("");
+  const bodyRows = Array(rows).fill(`<tr>${dataCells}</tr>`).join("");
+  return `<table class="skeleton-table"><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table>`;
+}
+
+function setButtonLoading(btn, loading) {
+  if (!btn) return;
+  if (loading) {
+    btn.classList.add("btn-loading");
+    btn.disabled = true;
+  } else {
+    btn.classList.remove("btn-loading");
+    btn.disabled = false;
+  }
+}
+
+/* ── Hamburger / sidebar drawer ─────────────────── */
+(function () {
+  const hamburger = document.getElementById("btnHamburger");
+  const overlay = document.getElementById("sidebarOverlay");
+  if (!hamburger) return;
+  function openSidebar() { document.body.classList.add("sidebar-open"); }
+  function closeSidebar() { document.body.classList.remove("sidebar-open"); }
+  hamburger.addEventListener("click", openSidebar);
+  if (overlay) overlay.addEventListener("click", closeSidebar);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSidebar(); });
+})();
+
 
 function applyRoleView() {
   document.querySelectorAll(".role-view").forEach((el) => {
@@ -57,6 +105,8 @@ function setActiveSection(sectionId) {
   document.querySelectorAll(".header-tab").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.target === sectionId);
   });
+  // Close sidebar drawer on mobile when a section is selected
+  document.body.classList.remove("sidebar-open");
 }
 
 function applyRoleHeader() {
@@ -187,7 +237,6 @@ if (btnCreateRequest) {
       vendor_id: user.role === "storage_holder" ? null : selectedVendor,
       delivery_date: isProduct ? deadline : startDate,
       department: category,
-      // AI-agent aligned fields (mirrored from /api/search payload)
       unit: isProduct ? document.getElementById("reqUnit").value : null,
       total_budget: totalBudget,
       min_reliability_score: minReliability,
@@ -196,11 +245,16 @@ if (btnCreateRequest) {
       start_date: isProduct ? null : startDate,
       service_level: isProduct ? null : document.getElementById("reqServiceLevel").value,
     };
-    const out = await api("/requests", "POST", payload);
-    document.getElementById("reqOut").innerHTML = `Request #${out.request_id} created. Shipping: ${esc(out.shipping_cost)} ${
-      out.shared_logistics_badge ? `<span class="badge ok">${esc(out.shared_logistics_badge)}</span>` : ""
-    }`;
-    await refreshRequestOptions();
+    setButtonLoading(btnCreateRequest, true);
+    try {
+      const out = await api("/requests", "POST", payload);
+      document.getElementById("reqOut").innerHTML = `Request #${out.request_id} created. Shipping: ${esc(out.shipping_cost)} ${
+        out.shared_logistics_badge ? `<span class="badge ok">${esc(out.shared_logistics_badge)}</span>` : ""
+      }`;
+      await refreshRequestOptions();
+    } finally {
+      setButtonLoading(btnCreateRequest, false);
+    }
   };
 }
 
@@ -267,12 +321,13 @@ window.rejectCompanyRequest = async function (requestId) {
 async function loadCompanyApprovals() {
   const outEl = document.getElementById("companyApprovalsOut");
   if (!outEl) return;
+  outEl.innerHTML = skeletonTable(["Name", "Username", "Role", "Department", "Actions"]);
   const rows = await api("/company-admin/registration-requests");
   if (!rows.length) {
-    outEl.innerHTML = "No pending registration requests for your company.";
+    outEl.innerHTML = emptyState("No pending approvals", "All department admin requests for your company have been handled.");
     return;
   }
-  outEl.innerHTML = `<table class="table"><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Department</th><th>Actions</th></tr></thead><tbody>${rows
+  outEl.innerHTML = `<table class="table animated"><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Department</th><th>Actions</th></tr></thead><tbody>${rows
     .map(
       (r) =>
         `<tr><td>${esc(r.full_name)}</td><td>${esc(r.username)}</td><td>${esc(r.requested_role)}</td><td>${esc(r.department)}</td><td><button class="btn btn-small" onclick="approveCompanyRequest(${r.request_id})">Approve</button> <button class="btn btn-small" onclick="rejectCompanyRequest(${r.request_id})">Reject</button></td></tr>`,
@@ -292,12 +347,13 @@ window.rejectDepartmentRequest = async function (requestId) {
 async function loadDepartmentApprovals() {
   const outEl = document.getElementById("departmentApprovalsOut");
   if (!outEl) return;
+  outEl.innerHTML = skeletonTable(["Name", "Username", "Role", "Department", "Actions"]);
   const rows = await api("/department-admin/registration-requests");
   if (!rows.length) {
-    outEl.innerHTML = "No pending user requests for your department.";
+    outEl.innerHTML = emptyState("No pending requests", "All user requests for your department have been reviewed.");
     return;
   }
-  outEl.innerHTML = `<table class="table"><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Department</th><th>Actions</th></tr></thead><tbody>${rows
+  outEl.innerHTML = `<table class="table animated"><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Department</th><th>Actions</th></tr></thead><tbody>${rows
     .map(
       (r) =>
         `<tr><td>${esc(r.full_name)}</td><td>${esc(r.username)}</td><td>${esc(r.requested_role)}</td><td>${esc(r.department)}</td><td><button class="btn btn-small" onclick="approveDepartmentRequest(${r.request_id})">Approve</button> <button class="btn btn-small" onclick="rejectDepartmentRequest(${r.request_id})">Reject</button></td></tr>`,
@@ -317,12 +373,13 @@ window.rejectPlatformRequest = async function (requestId) {
 async function loadPlatformApprovals() {
   const outEl = document.getElementById("platformApprovalsOut");
   if (!outEl) return;
+  outEl.innerHTML = skeletonTable(["Name", "Username", "Company", "Role", "Actions"]);
   const rows = await api("/admin/registration-requests");
   if (!rows.length) {
-    outEl.innerHTML = "No pending registration requests.";
+    outEl.innerHTML = emptyState("No pending registrations", "There are no company admin registration requests awaiting review.");
     return;
   }
-  outEl.innerHTML = `<table class="table"><thead><tr><th>Name</th><th>Username</th><th>Company</th><th>Role</th><th>Actions</th></tr></thead><tbody>${rows
+  outEl.innerHTML = `<table class="table animated"><thead><tr><th>Name</th><th>Username</th><th>Company</th><th>Role</th><th>Actions</th></tr></thead><tbody>${rows
     .map(
       (r) =>
         `<tr><td>${esc(r.full_name)}</td><td>${esc(r.username)}</td><td>${esc(r.company_name)}</td><td>${esc(r.requested_role)}</td><td><button class="btn btn-small" onclick="approvePlatformRequest(${r.request_id})">Approve</button> <button class="btn btn-small" onclick="rejectPlatformRequest(${r.request_id})">Reject</button></td></tr>`,
@@ -338,12 +395,13 @@ window.deleteUserByAdmin = async function (userId) {
 async function loadAdminUsers() {
   const outEl = document.getElementById("adminUsersOut");
   if (!outEl) return;
+  outEl.innerHTML = skeletonTable(["ID", "Name", "Username", "Role", "Active", "Action"]);
   const rows = await api("/admin/users");
   if (!rows.length) {
-    outEl.innerHTML = "No users found.";
+    outEl.innerHTML = emptyState("No users found", "The platform has no registered users yet.");
     return;
   }
-  outEl.innerHTML = `<table class="table"><thead><tr><th>ID</th><th>Name</th><th>Username</th><th>Role</th><th>Active</th><th>Action</th></tr></thead><tbody>${rows
+  outEl.innerHTML = `<table class="table animated"><thead><tr><th>ID</th><th>Name</th><th>Username</th><th>Role</th><th>Active</th><th>Action</th></tr></thead><tbody>${rows
     .map((u) => {
       const canDelete = u.role !== "platform_admin";
       return `<tr><td>${u.id}</td><td>${esc(u.full_name)}</td><td>${esc(u.username || "-")}</td><td>${esc(u.role)}</td><td>${u.is_active ? "Yes" : "No"}</td><td>${canDelete ? `<button class="btn btn-small" onclick="deleteUserByAdmin(${u.id})">Delete</button>` : "-"}</td></tr>`;
@@ -391,13 +449,14 @@ window.doneStorageRequest = async function (requestId) {
 async function loadStorageRequests() {
   const outEl = document.getElementById("storageRequestsOut");
   if (!outEl) return;
+  outEl.innerHTML = skeletonTable(["Title", "Requester", "Role", "Department", "Vendor", "Status", "Actions"]);
   const rows = await api("/procurement/storage-requests");
   storageRequestRowsCache = rows || [];
   if (!rows.length) {
-    outEl.innerHTML = "No department requests to review.";
+    outEl.innerHTML = emptyState("No requests to review", "There are no storage holder requests awaiting your decision.");
     return;
   }
-  outEl.innerHTML = `<table class="table"><thead><tr><th>Title</th><th>Requester</th><th>Role</th><th>Department</th><th>Vendor</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows
+  outEl.innerHTML = `<table class="table animated"><thead><tr><th>Title</th><th>Requester</th><th>Role</th><th>Department</th><th>Vendor</th><th>Status</th><th>Actions</th></tr></thead><tbody>${rows
     .map((r) => {
       let actions = "";
       if (r.status === "submitted") {
@@ -415,12 +474,13 @@ async function loadStorageRequests() {
 async function loadStorageInventory() {
   const outEl = document.getElementById("storageInventoryOut");
   if (!outEl) return;
+  outEl.innerHTML = skeletonTable(["Item", "Quantity", "Unit", "Min Threshold"]);
   const rows = await api("/inventory");
   if (!rows.length) {
-    outEl.innerHTML = "No inventory items found.";
+    outEl.innerHTML = emptyState("Inventory is empty", "No inventory items have been recorded for your department yet.");
     return;
   }
-  outEl.innerHTML = `<table class="table"><thead><tr><th>Item</th><th>Quantity</th><th>Unit</th><th>Min Threshold</th></tr></thead><tbody>${rows
+  outEl.innerHTML = `<table class="table animated"><thead><tr><th>Item</th><th>Quantity</th><th>Unit</th><th>Min Threshold</th></tr></thead><tbody>${rows
     .map((r) => `<tr><td>${esc(r.item_name)}</td><td>${esc(r.quantity)}</td><td>${esc(r.unit)}</td><td>${esc(r.min_threshold)}</td></tr>`)
     .join("")}</tbody></table>`;
 }
@@ -428,12 +488,13 @@ async function loadStorageInventory() {
 async function loadCompanyVendors() {
   const outEl = document.getElementById("companyVendorsOut");
   if (!outEl) return;
+  outEl.innerHTML = skeletonTable(["Vendor", "Trusted", "Categories"]);
   const rows = await api("/company/vendors");
   if (!rows.length) {
-    outEl.innerHTML = "No approved vendors yet.";
+    outEl.innerHTML = emptyState("No approved vendors", "Add your first trusted vendor using the form above.");
     return;
   }
-  outEl.innerHTML = `<table class="table"><thead><tr><th>Vendor</th><th>Trusted</th><th>Categories</th></tr></thead><tbody>${rows
+  outEl.innerHTML = `<table class="table animated"><thead><tr><th>Vendor</th><th>Trusted</th><th>Categories</th></tr></thead><tbody>${rows
     .map((v) => `<tr><td>${esc(v.vendor_name)}</td><td>${v.is_trusted ? "Yes" : "No"}</td><td>${esc(v.provided_categories || "-")}</td></tr>`)
     .join("")}</tbody></table>`;
 }
@@ -479,16 +540,17 @@ if (user.role === "storage_holder" && reqVendorField) {
 async function loadDepartmentProcurements() {
   const outEl = document.getElementById("deptProcurementsOut");
   if (!outEl) return;
+  outEl.innerHTML = skeletonTable(["#", "Title", "Status", "Type", "Qty", "Total Budget", "Vendor", "Date", "Requested By"]);
   const rows = await api("/department-admin/procurements");
   if (!rows.length) {
-    outEl.innerHTML = "No procurement requests submitted in your department yet.";
+    outEl.innerHTML = emptyState("No procurement history", "Your department hasn't submitted any procurement requests yet.");
     return;
   }
   const statusBadge = (s) => {
     const cls = s === "DONE" ? "ok" : s === "REJECTED" ? "warn" : "";
     return `<span class="badge ${cls}">${esc(s)}</span>`;
   };
-  outEl.innerHTML = `<table class="table"><thead><tr>
+  outEl.innerHTML = `<table class="table animated"><thead><tr>
       <th>#</th><th>Title</th><th>Status</th><th>Type</th><th>Qty</th>
       <th>Total Budget</th><th>Vendor</th><th>Decided/Required</th>
       <th>Requested By</th>
@@ -513,9 +575,10 @@ async function loadDepartmentProcurements() {
 async function loadCompanyDepartmentsOverview() {
   const outEl = document.getElementById("companyOverviewOut");
   if (!outEl) return;
+  outEl.innerHTML = skeletonTable(["Department", "Admin", "Requests", "Spend", "Status"]);
   const rows = await api("/company-admin/department-activity");
   if (!rows.length) {
-    outEl.innerHTML = "No department activity yet.";
+    outEl.innerHTML = emptyState("No department activity yet", "Departments will appear here once they start submitting procurement requests.");
     return;
   }
   outEl.innerHTML = rows
@@ -551,8 +614,8 @@ async function loadCompanyDepartmentsOverview() {
           </div>
           ${
             recentRows
-              ? `<table class="table"><thead><tr><th>#</th><th>Title</th><th>Status</th><th>Vendor</th><th>Budget</th><th>Delivery</th></tr></thead><tbody>${recentRows}</tbody></table>`
-              : `<div class="output">No recent requests.</div>`
+              ? `<table class="table animated"><thead><tr><th>#</th><th>Title</th><th>Status</th><th>Vendor</th><th>Budget</th><th>Delivery</th></tr></thead><tbody>${recentRows}</tbody></table>`
+              : emptyState("No recent requests", "")
           }
         </div>`;
     })
@@ -561,39 +624,75 @@ async function loadCompanyDepartmentsOverview() {
 
 const loadCompanyApprovalsBtn = document.getElementById("btnLoadCompanyApprovals");
 if (loadCompanyApprovalsBtn) {
-  loadCompanyApprovalsBtn.onclick = loadCompanyApprovals;
+  loadCompanyApprovalsBtn.onclick = async () => {
+    setButtonLoading(loadCompanyApprovalsBtn, true);
+    await loadCompanyApprovals();
+    setButtonLoading(loadCompanyApprovalsBtn, false);
+  };
 }
 const loadPlatformApprovalsBtn = document.getElementById("btnLoadPlatformApprovals");
 if (loadPlatformApprovalsBtn) {
-  loadPlatformApprovalsBtn.onclick = loadPlatformApprovals;
+  loadPlatformApprovalsBtn.onclick = async () => {
+    setButtonLoading(loadPlatformApprovalsBtn, true);
+    await loadPlatformApprovals();
+    setButtonLoading(loadPlatformApprovalsBtn, false);
+  };
 }
 const loadStorageRequestsBtn = document.getElementById("btnLoadStorageRequests");
 if (loadStorageRequestsBtn) {
-  loadStorageRequestsBtn.onclick = loadStorageRequests;
+  loadStorageRequestsBtn.onclick = async () => {
+    setButtonLoading(loadStorageRequestsBtn, true);
+    await loadStorageRequests();
+    setButtonLoading(loadStorageRequestsBtn, false);
+  };
 }
 const loadDepartmentApprovalsBtn = document.getElementById("btnLoadDepartmentApprovals");
 if (loadDepartmentApprovalsBtn) {
-  loadDepartmentApprovalsBtn.onclick = loadDepartmentApprovals;
+  loadDepartmentApprovalsBtn.onclick = async () => {
+    setButtonLoading(loadDepartmentApprovalsBtn, true);
+    await loadDepartmentApprovals();
+    setButtonLoading(loadDepartmentApprovalsBtn, false);
+  };
 }
 const loadDeptProcurementsBtn = document.getElementById("btnLoadDeptProcurements");
 if (loadDeptProcurementsBtn) {
-  loadDeptProcurementsBtn.onclick = loadDepartmentProcurements;
+  loadDeptProcurementsBtn.onclick = async () => {
+    setButtonLoading(loadDeptProcurementsBtn, true);
+    await loadDepartmentProcurements();
+    setButtonLoading(loadDeptProcurementsBtn, false);
+  };
 }
 const loadCompanyOverviewBtn = document.getElementById("btnLoadCompanyOverview");
 if (loadCompanyOverviewBtn) {
-  loadCompanyOverviewBtn.onclick = loadCompanyDepartmentsOverview;
+  loadCompanyOverviewBtn.onclick = async () => {
+    setButtonLoading(loadCompanyOverviewBtn, true);
+    await loadCompanyDepartmentsOverview();
+    setButtonLoading(loadCompanyOverviewBtn, false);
+  };
 }
 const loadStorageInventoryBtn = document.getElementById("btnLoadStorageInventory");
 if (loadStorageInventoryBtn) {
-  loadStorageInventoryBtn.onclick = loadStorageInventory;
+  loadStorageInventoryBtn.onclick = async () => {
+    setButtonLoading(loadStorageInventoryBtn, true);
+    await loadStorageInventory();
+    setButtonLoading(loadStorageInventoryBtn, false);
+  };
 }
 const loadAdminUsersBtn = document.getElementById("btnLoadAdminUsers");
 if (loadAdminUsersBtn) {
-  loadAdminUsersBtn.onclick = loadAdminUsers;
+  loadAdminUsersBtn.onclick = async () => {
+    setButtonLoading(loadAdminUsersBtn, true);
+    await loadAdminUsers();
+    setButtonLoading(loadAdminUsersBtn, false);
+  };
 }
 const addVendorBtn = document.getElementById("btnAddVendor");
 if (addVendorBtn) {
-  addVendorBtn.onclick = createApprovedVendor;
+  addVendorBtn.onclick = async () => {
+    setButtonLoading(addVendorBtn, true);
+    await createApprovedVendor();
+    setButtonLoading(addVendorBtn, false);
+  };
   loadCompanyVendors();
 }
 

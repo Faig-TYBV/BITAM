@@ -879,31 +879,206 @@ small {
   }
 }
 
+/* ────────────────────────────────────────────────
+   Hamburger button (visible only on mobile)
+   ──────────────────────────────────────────────── */
+.hamburger {
+  display: none;
+  width: 40px;
+  height: 40px;
+  min-height: 44px;
+  min-width: 44px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-shrink: 0;
+  transition: background-color var(--transition), border-color var(--transition);
+}
+.hamburger:hover { background: var(--surface-soft); border-color: #b1bbd1; }
+.hamburger span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform 0.22s ease, opacity 0.22s ease;
+}
+
+/* Sidebar overlay (mobile) */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(8, 15, 40, 0.5);
+  z-index: 39;
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+body.sidebar-open .sidebar-overlay { display: block; animation: overlayFadeIn 0.22s ease; }
+@keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* ────────────────────────────────────────────────
+   Button loading / spinner
+   ──────────────────────────────────────────────── */
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.btn-loading {
+  pointer-events: none;
+  position: relative;
+  color: transparent !important;
+}
+.btn-loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  border: 2px solid rgba(70, 99, 255, 0.25);
+  border-top-color: var(--accent);
+  animation: spin 0.65s linear infinite;
+}
+.btn-primary.btn-loading::after {
+  border-color: rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+}
+
+/* ────────────────────────────────────────────────
+   Skeleton loader
+   ──────────────────────────────────────────────── */
+@keyframes shimmer {
+  from { background-position: -300% 0; }
+  to   { background-position:  300% 0; }
+}
+
+.skeleton-cell {
+  display: inline-block;
+  height: 13px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #edf0f7 25%, #e2e6f0 50%, #edf0f7 75%);
+  background-size: 400% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+.skeleton-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-top: 1px solid var(--divider);
+}
+.skeleton-table thead th {
+  background: var(--surface);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  font-weight: 700;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.skeleton-table tbody td {
+  padding: 16px 14px;
+  border-bottom: 1px solid var(--divider);
+}
+.skeleton-table tbody tr:last-child td { border-bottom: 0; }
+
+/* ────────────────────────────────────────────────
+   Empty state
+   ──────────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 52px 24px 44px;
+  gap: 10px;
+  color: var(--text-muted);
+}
+.empty-state svg { margin-bottom: 4px; }
+.empty-state h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.empty-state p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-soft);
+  max-width: 300px;
+  line-height: 1.6;
+}
+
+/* ────────────────────────────────────────────────
+   Table row staggered fade-in
+   ──────────────────────────────────────────────── */
+@keyframes rowFadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.table.animated tbody tr {
+  animation: rowFadeIn 0.28s ease forwards;
+  opacity: 0;
+}
+.table.animated tbody tr:nth-child(1)  { animation-delay:   0ms; }
+.table.animated tbody tr:nth-child(2)  { animation-delay:  40ms; }
+.table.animated tbody tr:nth-child(3)  { animation-delay:  80ms; }
+.table.animated tbody tr:nth-child(4)  { animation-delay: 120ms; }
+.table.animated tbody tr:nth-child(5)  { animation-delay: 160ms; }
+.table.animated tbody tr:nth-child(6)  { animation-delay: 200ms; }
+.table.animated tbody tr:nth-child(7)  { animation-delay: 240ms; }
+.table.animated tbody tr:nth-child(8)  { animation-delay: 280ms; }
+.table.animated tbody tr:nth-child(9)  { animation-delay: 320ms; }
+.table.animated tbody tr:nth-child(10) { animation-delay: 360ms; }
+
+/* ────────────────────────────────────────────────
+   Responsive
+   ──────────────────────────────────────────────── */
 @media (max-width: 880px) {
+  .hamburger { display: flex; }
+
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  /* Sidebar becomes a fixed off-canvas drawer */
   .sidebar {
-    position: static;
-    max-height: none;
-    min-height: auto;
-    border-radius: 0;
-    border-right: 0;
-    border-bottom: 1px solid var(--sidebar-divider);
-    flex-direction: column;
-    box-shadow: none;
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: 280px;
+    max-height: 100vh;
+    z-index: 40;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    border-right: 1px solid #1f2a47 !important;
+    border-bottom: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: var(--shadow-panel) !important;
   }
-  .sidebar > .btn {
-    margin-top: 12px;
+
+  body.sidebar-open .sidebar {
+    transform: translateX(0);
   }
+
+  .sidebar > .btn { margin-top: 12px; }
+
   .section-nav {
     flex-direction: row;
     flex-wrap: wrap;
     gap: 6px;
   }
-  .section-link {
-    width: auto;
-  }
+  .section-link { width: auto; }
 }
 
 @media (max-width: 620px) {
@@ -914,18 +1089,16 @@ small {
     padding-right: 18px;
   }
   .topbar {
-    flex-direction: column;
-    align-items: flex-start;
-    padding-top: 22px;
+    flex-direction: row;
+    align-items: center;
+    padding-top: 18px;
     padding-bottom: 18px;
+    gap: 12px;
   }
-  .section-group {
-    padding: 22px 0;
-  }
+  .topbar > div { flex: 1; min-width: 0; }
+  .section-group { padding: 22px 0; }
   .btn,
-  .btn-primary {
-    width: 100%;
-  }
+  .btn-primary { width: 100%; }
   .actions {
     flex-direction: column;
     align-items: stretch;

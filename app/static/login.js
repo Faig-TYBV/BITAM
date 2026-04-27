@@ -4,7 +4,11 @@ async function login() {
   const username = document.getElementById("username").value.trim();
   const password = document.getElementById("password").value;
   const msg = document.getElementById("loginMsg");
-  msg.textContent = "Signing in...";
+  const btn = document.getElementById("btnLogin");
+
+  msg.textContent = "";
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
 
   try {
     const res = await fetch("/auth/login", {
@@ -21,6 +25,9 @@ async function login() {
     window.location.href = "/app";
   } catch (err) {
     msg.textContent = `Login failed: ${String(err.message || err)}`;
+  } finally {
+    btn.classList.remove("btn-loading");
+    btn.disabled = false;
   }
 }
 
@@ -58,8 +65,13 @@ function renderDepartments() {
 
 async function registerRequest() {
   const msg = document.getElementById("regMsg");
-  msg.textContent = "Submitting request...";
+  const btn = document.getElementById("btnRegister");
+
+  msg.textContent = "";
   msg.classList.remove("success");
+  btn.classList.add("btn-loading");
+  btn.disabled = true;
+
   try {
     const payload = {
       full_name: document.getElementById("regFullName").value.trim(),
@@ -83,6 +95,9 @@ async function registerRequest() {
     msg.classList.add("success");
   } catch (err) {
     msg.textContent = `Registration failed: ${String(err.message || err)}`;
+  } finally {
+    btn.classList.remove("btn-loading");
+    btn.disabled = false;
   }
 }
 
