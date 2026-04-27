@@ -102,6 +102,7 @@ body::before {
   mask-image: radial-gradient(circle at 40% 20%, black 35%, transparent 70%);
   animation: meshPulse 14s ease-in-out infinite;
   opacity: 0.45;
+  will-change: transform, opacity;
 }
 
 body::after {
@@ -450,7 +451,6 @@ body::after {
   border-radius: 999px;
   background: #4da3ff;
   display: inline-block;
-  margin-right: 6px;
   box-shadow: 0 0 10px rgba(77, 163, 255, 0.8);
 }
 
