@@ -30,15 +30,33 @@ let activeSectionId = null;
 function setupSectionTabs() {
   const tabsHost = document.getElementById("sectionTabs");
   if (!tabsHost) return;
+  const tabIcons = {
+    "sec-request-form": `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 3h7l5 5v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5"/></svg>`,
+    "sec-storage-requests": `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v6H4z"/><path d="M4 14h16v6H4z"/></svg>`,
+    "sec-storage-inventory": `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18v10H3z"/><path d="M7 7V5h10v2"/></svg>`,
+    "sec-company-approvals": `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 4v6c0 5-3.5 9-7 10-3.5-1-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>`,
+    "sec-department-approvals": `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2"/><path d="M3 20c0-3 3-5 6-5"/><path d="M14 20c0-2 2-3 4-3"/></svg>`,
+    "sec-department-procurements": `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5"/><path d="M10 19V9"/><path d="M16 19V12"/><path d="M22 19V7"/></svg>`,
+    "sec-company-overview": `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 21v-6h6v6"/></svg>`,
+    "sec-platform-approvals": `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><path d="M8 11l3 3 5-6"/></svg>`,
+    "sec-platform-users": `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>`,
+    "sec-approved-vendors": `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 7h10l1 10H6z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg>`,
+  };
   const sections = [...document.querySelectorAll(".section-group")].filter((el) => !el.classList.contains("hidden"));
   tabsHost.innerHTML = sections
     .map((sec) => {
       const title = sec.querySelector(".section-head h3")?.textContent?.replace(/^\d+\)\s*/, "") || sec.id;
-      return `<button class="header-tab" data-target="${sec.id}">${esc(title)}</button>`;
+      const icon = tabIcons[sec.id] || `<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/></svg>`;
+      return `<button class="header-tab" data-target="${sec.id}"><span class="tab-icon">${icon}</span>${esc(title)}</button>`;
     })
     .join("");
   tabsHost.querySelectorAll(".header-tab").forEach((btn) => {
-    btn.addEventListener("click", () => setActiveSection(btn.dataset.target));
+    btn.addEventListener("click", () => {
+      setActiveSection(btn.dataset.target);
+      if (window.innerWidth <= 1024) {
+        document.body.classList.remove("sidebar-open");
+      }
+    });
   });
   if (!activeSectionId || !sections.some((s) => s.id === activeSectionId && !s.classList.contains("hidden"))) {
     activeSectionId = sections[0]?.id || null;
@@ -68,16 +86,25 @@ function applyRoleHeader() {
     storage_holder: "Storage Holder Workspace",
   };
   const subtitleByRole = {
-    platform_admin: "Platform-level approvals and governance.",
-    company_admin: "Approves department admins and manages company controls.",
-    department_admin: "Approves storage/procurement users in your department.",
-    procurement_decider: "Request creation and AI-driven vendor recommendation.",
-    storage_holder: "See inventory amounts and submit purchase requests.",
+    platform_admin: "Platform-level approvals, compliance, and enterprise governance.",
+    company_admin: "Approve department admins and orchestrate company procurement controls.",
+    department_admin: "Coordinate approvals, vendor decisions, and departmental spend visibility.",
+    procurement_decider: "Request creation, vendor selection, and AI-guided sourcing.",
+    storage_holder: "Monitor inventory and initiate procurement demand.",
+  };
+  const statusByRole = {
+    platform_admin: "Platform Command",
+    company_admin: "Company Oversight",
+    department_admin: "Department Live",
+    procurement_decider: "Sourcing Live",
+    storage_holder: "Inventory Live",
   };
   const titleEl = document.getElementById("topbarTitle");
   const subtitleEl = document.getElementById("topbarSubtitle");
+  const statusEl = document.getElementById("topbarStatus");
   if (titleEl) titleEl.textContent = titleByRole[user.role] || "AZCON Workspace";
   if (subtitleEl) subtitleEl.textContent = subtitleByRole[user.role] || "Role-specific workspace.";
+  if (statusEl) statusEl.textContent = statusByRole[user.role] || "Live Workspace";
 }
 
 async function loadVendors() {
@@ -460,6 +487,24 @@ document.getElementById("btnLogout").onclick = () => {
   window.location.href = "/";
 };
 
+const sidebarToggle = document.getElementById("sidebarToggle");
+const sidebarScrim = document.getElementById("sidebarScrim");
+const closeSidebar = () => document.body.classList.remove("sidebar-open");
+if (sidebarToggle) {
+  sidebarToggle.addEventListener("click", () => {
+    document.body.classList.toggle("sidebar-open");
+  });
+}
+if (sidebarScrim) {
+  sidebarScrim.addEventListener("click", closeSidebar);
+}
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeSidebar();
+});
+window.addEventListener("resize", () => {
+  if (window.innerWidth > 1024) closeSidebar();
+});
+
 document.getElementById("userName").textContent = user.full_name;
 document.getElementById("userRole").textContent = user.role;
 document.getElementById("userCompany").textContent = user.company_name || "-";
@@ -484,30 +529,47 @@ async function loadDepartmentProcurements() {
     outEl.innerHTML = "No procurement requests submitted in your department yet.";
     return;
   }
-  const statusBadge = (s) => {
-    const cls = s === "DONE" ? "ok" : s === "REJECTED" ? "warn" : "";
-    return `<span class="badge ${cls}">${esc(s)}</span>`;
+  const statusMap = {
+    DONE: { label: "Completed", cls: "ok", icon: "✓" },
+    APPROVED: { label: "Approved", cls: "ok", icon: "✓" },
+    REJECTED: { label: "Rejected", cls: "danger", icon: "✕" },
+    SUBMITTED: { label: "Submitted", cls: "info", icon: "•" },
+    PENDING: { label: "Pending Review", cls: "warn", icon: "!" },
   };
-  outEl.innerHTML = `<table class="table"><thead><tr>
-      <th>#</th><th>Title</th><th>Status</th><th>Type</th><th>Qty</th>
+  const statusBadge = (s) => {
+    const normalized = String(s || "").toUpperCase();
+    const entry = statusMap[normalized] || { label: s, cls: "info", icon: "•" };
+    return `<span class="badge ${entry.cls}"><span class="badge-icon">${esc(entry.icon)}</span>${esc(entry.label)}</span>`;
+  };
+  outEl.innerHTML = `<div class="table-card"><table class="table"><thead><tr>
+      <th>#</th><th>Request</th><th>Status</th><th>Type</th><th>Qty</th>
       <th>Total Budget</th><th>Vendor</th><th>Decided/Required</th>
       <th>Requested By</th>
     </tr></thead><tbody>${rows
-      .map(
-        (r) =>
-          `<tr>
-            <td>${r.request_id}</td>
-            <td>${esc(r.title)}</td>
+      .map((r) => {
+        const avatarUrl = `https://i.pravatar.cc/48?u=${encodeURIComponent(r.requested_by || "user")}`;
+        const budget = r.total_budget != null ? `${Number(r.total_budget).toLocaleString()} AZN` : "-";
+        return `<tr>
+            <td>${esc(r.request_id)}</td>
+            <td><strong>${esc(r.title)}</strong><div class="muted">${esc(r.department || "-")}</div></td>
             <td>${statusBadge(r.status)}</td>
             <td>${esc(r.item_type || "-")}</td>
             <td>${esc((r.quantity ?? "-") + (r.unit ? " " + r.unit : ""))}</td>
-            <td>${r.total_budget != null ? Number(r.total_budget).toLocaleString() : "-"}</td>
+            <td>${budget}</td>
             <td>${esc(r.vendor_name || "-")}</td>
             <td>${esc(r.delivery_date || r.required_by || "-")}</td>
-            <td>${esc(r.requested_by)} <small class="muted">(${esc(r.requested_by_role)})</small></td>
-          </tr>`,
-      )
-      .join("")}</tbody></table>`;
+            <td>
+              <div class="cell-user">
+                <img class="avatar" src="${avatarUrl}" alt="${esc(r.requested_by)}" />
+                <div>
+                  <div class="user-name">${esc(r.requested_by)}</div>
+                  <div class="user-role">${esc(r.requested_by_role || "-")}</div>
+                </div>
+              </div>
+            </td>
+          </tr>`;
+      })
+      .join("")}</tbody></table></div>`;
 }
 
 async function loadCompanyDepartmentsOverview() {

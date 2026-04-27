@@ -18,21 +18,108 @@
         </div>
 
         <div class="sidebar-meta">
-          <div class="field"><label>User</label><div id="userName" class="profile-text">-</div></div>
-          <div class="field"><label>Role</label><div id="userRole" class="profile-text">-</div></div>
-          <div class="field"><label>Company</label><div id="userCompany" class="profile-text">-</div></div>
-          <div class="field"><label>Department</label><div id="userDepartment" class="profile-text">-</div></div>
+          <div class="field"><label><span class="meta-icon meta-user"></span>User</label><div id="userName" class="profile-text">-</div></div>
+          <div class="field"><label><span class="meta-icon meta-role"></span>Role</label><div id="userRole" class="profile-text">-</div></div>
+          <div class="field"><label><span class="meta-icon meta-company"></span>Company</label><div id="userCompany" class="profile-text">-</div></div>
+          <div class="field"><label><span class="meta-icon meta-department"></span>Department</label><div id="userDepartment" class="profile-text">-</div></div>
         </div>
-        <button id="btnLogout" class="btn">Logout</button>
+        <button id="btnLogout" class="btn btn-logout">
+          <span class="btn-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 17l5-5-5-5" />
+              <path d="M21 12H9" />
+              <path d="M12 19H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h7" />
+            </svg>
+          </span>
+          Logout
+        </button>
       </aside>
+      <div class="sidebar-scrim" id="sidebarScrim"></div>
 
       <main class="content">
         <header class="topbar">
-          <div>
+          <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle menu"><span></span></button>
+          <div class="topbar-text">
             <h2 id="topbarTitle">AZCON Vendor Hub</h2>
             <p id="topbarSubtitle">Şirkətlər, uğur faizi, sifariş və AI tövsiyə axını.</p>
           </div>
+          <div class="topbar-actions">
+            <span class="status-pill"><span class="dot"></span><span id="topbarStatus">Live Workspace</span></span>
+          </div>
         </header>
+
+        <section class="live-feed">
+          <div class="live-feed-head">
+            <div>
+              <h3>Live Activity Feed &amp; Status</h3>
+              <p>Real-time requests, approvals, and procurement pulses across your department.</p>
+            </div>
+            <div class="status-pill"><span class="dot"></span>Synced 2m ago</div>
+          </div>
+          <div class="activity-list">
+            <article class="activity-item">
+              <img class="avatar" src="https://i.pravatar.cc/48?img=12" alt="A. Aliyeva" />
+              <div class="activity-body">
+                <div class="activity-title">
+                  <span class="activity-icon">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M4 4h16v4H4z" />
+                      <path d="M4 12h16v8H4z" />
+                    </svg>
+                  </span>
+                  A. Aliyeva created “IT Hardware Refresh” request
+                </div>
+                <div class="activity-sub">Storage Holder · IT &amp; Tech · Budget 52,000 AZN</div>
+              </div>
+              <div class="activity-meta">
+                <span class="status-chip pending">Pending Review</span>
+                <span class="activity-time">2m ago</span>
+              </div>
+            </article>
+
+            <article class="activity-item">
+              <img class="avatar" src="https://i.pravatar.cc/48?img=32" alt="R. Karimov" />
+              <div class="activity-body">
+                <div class="activity-title">
+                  <span class="activity-icon">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </span>
+                  R. Karimov approved vendor shortlist for “Hangar Refurb”
+                </div>
+                <div class="activity-sub">Procurement Decider · Construction &amp; Heavy</div>
+              </div>
+              <div class="activity-meta">
+                <span class="status-chip approved">Approved</span>
+                <span class="activity-time">18m ago</span>
+              </div>
+            </article>
+
+            <article class="activity-item">
+              <img class="avatar" src="https://i.pravatar.cc/48?img=45" alt="N. Guliyeva" />
+              <div class="activity-body">
+                <div class="activity-title">
+                  <span class="activity-icon">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 8v4l3 3" />
+                      <circle cx="12" cy="12" r="9" />
+                    </svg>
+                  </span>
+                  SLA review started for “Ground Logistics” service
+                </div>
+                <div class="activity-sub">Department Admin · Logistics &amp; Aviation</div>
+              </div>
+              <div class="activity-meta">
+                <span class="status-chip review">In Review</span>
+                <span class="activity-time">42m ago</span>
+              </div>
+            </article>
+          </div>
+          <div class="live-feed-footer">
+            <button class="btn btn-ghost">View Full History</button>
+          </div>
+        </section>
         <div id="sectionTabs" class="header-tabs"></div>
 
         <div class="cards-grid">
