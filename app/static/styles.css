@@ -279,14 +279,13 @@ body::after {
   background: rgba(77, 163, 255, 0.18);
   border: 1px solid rgba(140, 180, 255, 0.28);
   color: #cfe2ff;
-  font-size: 12px;
   box-shadow: 0 0 12px rgba(77, 163, 255, 0.25);
 }
 
-.meta-user::before { content: "👤"; }
-.meta-role::before { content: "🛡️"; }
-.meta-company::before { content: "🏢"; }
-.meta-department::before { content: "🧭"; }
+.meta-icon svg {
+  width: 12px;
+  height: 12px;
+}
 
 .profile-text {
   background: rgba(15, 24, 44, 0.65);
@@ -611,7 +610,7 @@ body::after {
 /* Last visible section in the page should not draw a divider */
 .section-group:last-child,
 .cards-grid:last-child .section-group {
-  border-bottom: 1px solid rgba(140, 170, 220, 0.18);
+  border-bottom: 0;
 }
 
 .section-head {
